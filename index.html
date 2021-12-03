@@ -1,0 +1,69 @@
+  <!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Drawing...</title>
+    </head>
+    <body>
+      <canvas id="myCanvas" width="1800" height="900" style="background: #000;">Your browser does not support the HTML5 canvas tag.</canvas>
+
+      <script>
+         var ws = new WebSocket("ws://localhost:8000/ws");
+
+          ws.onmessage = function (evt) {
+            const line = JSON.parse(evt.data);
+            draw(line);
+          };
+
+          const c = document.getElementById("myCanvas");
+          c.addEventListener("click", penTool);
+          c.addEventListener("mousedown", setLastCoords);
+          c.addEventListener("mousemove", freeForm);
+
+          const ctx = c.getContext("2d");
+
+          function setLastCoords(e) {
+              const {x, y} = c.getBoundingClientRect();
+              lastX = e.clientX - x;
+              lastY = e.clientY - y;
+          }
+
+          function freeForm(e) {
+              if (e.buttons !== 1) return; // left button is not pushed yet
+              penTool(e);
+          }
+
+          function penTool(e) {
+              const {x, y} = c.getBoundingClientRect();
+              const newX = e.clientX - x;
+              const newY = e.clientY - y;
+
+              const line = {
+                lastX,
+                lastY,
+                newX,
+                newY
+              };
+
+              draw(line);
+              ws.send(JSON.stringify(line));
+
+              lastX = newX;
+              lastY = newY;
+          }
+
+          function draw(line) {
+              ctx.beginPath();
+              ctx.lineWidth = 3;
+              ctx.moveTo(line.lastX, line.lastY);
+              ctx.lineTo(line.newX, line.newY);
+              ctx.strokeStyle = 'white';
+              ctx.stroke();
+              ctx.closePath();
+          }
+
+          let lastX = 0;
+          let lastY = 0;
+      </script>
+    </body>
+  </html>
