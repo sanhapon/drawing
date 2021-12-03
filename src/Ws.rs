@@ -1,11 +1,11 @@
-use crate::{Client, Clients};
+use crate::{Client, Clients, Lines};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use uuid::Uuid;
-use warp::ws::{Message, WebSocket};
+use warp::ws::{WebSocket};
 
-pub async fn client_connection(ws: WebSocket, clients: Clients) {
+pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
     println!("establishing client connection... {:?}", ws);
 
     let (client_ws_sender, mut client_ws_rcv) = ws.split();
@@ -26,64 +26,30 @@ pub async fn client_connection(ws: WebSocket, clients: Clients) {
     };
 
     clients.lock().await.insert(uuid.clone(), new_client);
+    //TODO: Send what we in lines to new client
 
     while let Some(result) = client_ws_rcv.next().await {
-        let msg = match result {
-            Ok(msg) => msg,
+        match result {
+            Ok(msg) => {
+                //TODO: Insert into lines
+                send_to_all(msg, &clients).await;
+            },
             Err(e) => {
                 println!("error receiving message for id {}): {}", &uuid.clone(), e);
                 break;
             }
-        };
-
-        for (client_id, client) in &clients.lock().await.clone() {
-            if client_id != &uuid
-            {
-                send_back(client_id, &msg, &client).await;
-            }
         }
-
-        // client_msg(&uuid, msg, &clients).await;
     }
 
     clients.lock().await.remove(&uuid);
     println!("{} disconnected", uuid);
 }
 
-async fn send_back(_: &str, msg: &warp::ws::Message, client: &Client) {
-    // println!("send to {}: {:?}", client_id, msg);
-
-    let message = match msg.to_str() {
-        Ok(v) => v,
-        Err(_) => return
-    };
-
-    if let Some(sender) = &client.sender {
-        println!("send {}", message);
-        let _ = sender.send(Ok(Message::text(message)));
+async fn send_to_all(msg: warp::ws::Message, clients: &Clients) {
+    for (_, client) in &clients.lock().await.clone() {
+        if let Some(sender) = &client.sender {
+            // println!("send to {}: {:?}", client_id, msg);
+            let _ = sender.send(Ok(msg.clone()));
+        }
     }
-    return;
 }
-
-// async fn client_msg(client_id: &str, msg: Message, clients: &Clients) {
-//     println!("received message form {}: {:?}", client_id, msg);
-
-//     let message = match msg.to_str() {
-//         Ok(v) => v,
-//         Err(_) => return
-//     };
-
-//     if message == "ping" || message == "ping\n" {
-//         let locked = clients.lock().await;
-//         match locked.get(client_id) {
-//             Some(v) => {
-//                 if let Some(sender) = &v.sender {
-//                     println!("sending pong");
-//                     let _ = sender.send(Ok(Message::text("pong")));
-//                 }
-//             }
-//             None => return,
-//         }
-//         return;
-//     }
-// }
