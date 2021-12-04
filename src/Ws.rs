@@ -1,9 +1,9 @@
-use crate::{Client, Clients, Lines};
+use crate::{Client, Clients, Lines, Line};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use uuid::Uuid;
-use warp::ws::{WebSocket};
+use warp::ws::{WebSocket, Message};
 
 pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
     println!("establishing client connection... {:?}", ws);
@@ -25,14 +25,40 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
         sender: Some(client_sender),
     };
 
-    clients.lock().await.insert(uuid.clone(), new_client);
-    //TODO: Send what we in lines to new client
+    //Send what we in lines to new client
+    let the_copy = lines.lock().await.clone();
+    let mut iter = the_copy.iter();
 
+    loop {
+        let line = iter.next();
+        match line {
+            Some(line) => {
+                let line_json = serde_json::to_string(line).unwrap();
+                if let Some(sender) = &new_client.sender {
+                    sender.send(Ok(Message::text(line_json))).unwrap();
+                }
+            },
+            None => break
+        }
+    }
+
+    // Add new client into map
+    clients.lock().await.insert(uuid.clone(), new_client);
+
+    // Listen for incomming line
     while let Some(result) = client_ws_rcv.next().await {
         match result {
             Ok(msg) => {
-                //TODO: Insert into lines
-                send_to_all(msg, &clients).await;
+                send_to_all(&msg, &clients).await;
+
+                let message = match msg.to_str() {
+                    Ok(v) => v,
+                    Err(_) => return,
+                };
+
+                let line: Line = serde_json::from_str(message).unwrap();
+                lines.lock().await.push_back(line);
+
             },
             Err(e) => {
                 println!("error receiving message for id {}): {}", &uuid.clone(), e);
@@ -45,7 +71,7 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
     println!("{} disconnected", uuid);
 }
 
-async fn send_to_all(msg: warp::ws::Message, clients: &Clients) {
+async fn send_to_all(msg: &warp::ws::Message, clients: &Clients) {
     for (_, client) in &clients.lock().await.clone() {
         if let Some(sender) = &client.sender {
             // println!("send to {}: {:?}", client_id, msg);

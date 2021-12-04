@@ -24,8 +24,8 @@
 
           function setLastCoords(e) {
               const {x, y} = c.getBoundingClientRect();
-              lastX = e.clientX - x;
-              lastY = e.clientY - y;
+              last_x = e.clientX - x;
+              last_y = e.clientY - y;
           }
 
           function freeForm(e) {
@@ -35,35 +35,35 @@
 
           function penTool(e) {
               const {x, y} = c.getBoundingClientRect();
-              const newX = e.clientX - x;
-              const newY = e.clientY - y;
+              const new_x = e.clientX - x;
+              const new_y = e.clientY - y;
 
               const line = {
-                lastX,
-                lastY,
-                newX,
-                newY
+                last_x,
+                last_y,
+                new_x,
+                new_y
               };
 
               draw(line);
               ws.send(JSON.stringify(line));
 
-              lastX = newX;
-              lastY = newY;
+              last_x = new_x;
+              last_y = new_y;
           }
 
           function draw(line) {
               ctx.beginPath();
               ctx.lineWidth = 3;
-              ctx.moveTo(line.lastX, line.lastY);
-              ctx.lineTo(line.newX, line.newY);
+              ctx.moveTo(line.last_x, line.last_y);
+              ctx.lineTo(line.new_x, line.new_y);
               ctx.strokeStyle = 'white';
               ctx.stroke();
               ctx.closePath();
           }
 
-          let lastX = 0;
-          let lastY = 0;
+          let last_x = 0;
+          let last_y = 0;
       </script>
     </body>
   </html>
