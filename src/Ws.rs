@@ -13,11 +13,13 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
 
     let client_rcv = UnboundedReceiverStream::new(client_rcv);
 
-    tokio::task::spawn(client_rcv.forward(client_ws_sender).map(|result| {
+    tokio::task::spawn(client_rcv.forward(client_ws_sender).map(|result| async {
         if let Err(e) = result {
             println!("error sending websocket msg: {}", e);
         }
     }));
+
+    // println!("clients -->{}", clients.lock().await.len());
 
     let uuid = Uuid::new_v4().to_simple().to_string();
     let new_client = Client {
@@ -49,7 +51,7 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
     while let Some(result) = client_ws_rcv.next().await {
         match result {
             Ok(msg) => {
-                send_to_all(&msg, &clients).await;
+                send_to_all(&uuid, &msg, &clients).await;
 
                 let message = match msg.to_str() {
                     Ok(v) => v,
@@ -71,11 +73,13 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
     println!("{} disconnected", uuid);
 }
 
-async fn send_to_all(msg: &warp::ws::Message, clients: &Clients) {
-    for (_, client) in &clients.lock().await.clone() {
-        if let Some(sender) = &client.sender {
-            // println!("send to {}: {:?}", client_id, msg);
-            let _ = sender.send(Ok(msg.clone()));
+async fn send_to_all(current_uuid: &str, msg: &warp::ws::Message, clients: &Clients) {
+    for (client_uuid, client) in &clients.lock().await.clone() {
+        if current_uuid != client_uuid {
+            if let Some(sender) = &client.sender {
+                println!("send to {}: {:?}", client_uuid, msg);
+                let _ = sender.send(Ok(msg.clone()));
+            }
         }
     }
 }
