@@ -9,10 +9,19 @@ use serde::{Serialize, Deserialize};
 mod handlers;
 mod ws;
 
+pub const MAX_MESSAGES: usize = 2000;
+
 #[derive(Debug, Clone)]
 pub struct Client {
     pub client_id: String,
     pub sender: Option<mpsc::UnboundedSender<std::result::Result<Message, warp::Error>>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DrawingMsg  {
+    line: Option<Line>,
+    messages: Option<usize>,
+    msg_type: String ,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
