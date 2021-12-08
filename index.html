@@ -9,7 +9,7 @@
       <canvas id="myCanvas" width="1800" height="980" style="background: #000; margin-top:10px;"></canvas>
 
       <script>
-         var ws = new WebSocket("ws://localhost:8000/ws");
+         var ws = new WebSocket(`ws://${window.location.hostname}/ws`);
 
           ws.onmessage = function (evt) {
             const msg = JSON.parse(evt.data);
