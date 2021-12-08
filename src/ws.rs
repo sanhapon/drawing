@@ -122,4 +122,3 @@ async fn read_existing_lines_for_new_client(lines: LinkedList<Line>, new_client:
         }
     }
 }
-diff --git a/src/Ws.rs b/src/Ws.rs
