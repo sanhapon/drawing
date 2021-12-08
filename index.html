@@ -2,17 +2,29 @@
   <html>
     <head>
       <meta charset="utf-8">
-      <title>Drawing...</title>
+      <title>Live Drawing</title>
     </head>
     <body>
-      <canvas id="myCanvas" width="1800" height="900" style="background: #000;">Your browser does not support the HTML5 canvas tag.</canvas>
+      <div>Messages: <span id='messages'>0</span></div>
+      <canvas id="myCanvas" width="1800" height="980" style="background: #000; margin-top:10px;"></canvas>
 
       <script>
          var ws = new WebSocket("ws://localhost:8000/ws");
 
           ws.onmessage = function (evt) {
-            const line = JSON.parse(evt.data);
-            draw(line);
+            const msg = JSON.parse(evt.data);
+            const mySpan = document.getElementById("messages");
+            if (msg.msg_type === 'messages') {
+              mySpan.textContent = msg.messages;
+              if (msg.messages === 0) {
+                console.log("clear");
+                const c = document.getElementById("myCanvas");
+                const cv = c.getContext('2d');
+                cv.clearRect(0,0,1800,980);
+              }
+            } else {
+              draw(msg.line);
+            }
           };
 
           const c = document.getElementById("myCanvas");
@@ -29,7 +41,7 @@
           }
 
           function freeForm(e) {
-              if (e.buttons !== 1) return; // left button is not pushed yet
+              if (e.buttons !== 1) return;
               penTool(e);
           }
 
@@ -54,7 +66,7 @@
 
           function draw(line) {
               ctx.beginPath();
-              ctx.lineWidth = 3;
+              ctx.lineWidth = 1;
               ctx.moveTo(line.last_x, line.last_y);
               ctx.lineTo(line.new_x, line.new_y);
               ctx.strokeStyle = 'white';
