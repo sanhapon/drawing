@@ -16,6 +16,7 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
     tokio::task::spawn(client_rcv.forward(client_ws_sender).map(|result| {
         if let Err(e) = result {
             println!("error sending websocket msg: {}", e);
+            return;
         }
     }));
 
@@ -31,14 +32,22 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
     // Add new client into map
     clients.lock().await.insert(uuid.clone(), new_client);
 
+    println!("{} connected", uuid);
+    send_number_of_clients(&uuid, &clients, true).await;
+
     // Listen for incomming message
     while let Some(result) = client_ws_rcv.next().await {
         match result {
             Ok(msg) => {
+                if msg.is_close() {
+                    break;
+                }
+
+                // let line : Line = match msg.to_str() {
                 let line : Line = match msg.to_str() {
                     Ok(v) => serde_json::from_str(v).unwrap(),
                     Err(e) => {
-                        println!("error => {:?}", e);
+                        println!("got msg but cannot parase => {:?}", e);
                         break;
                     }
                 };
@@ -51,19 +60,11 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
                 }
 
                 // send line
-                let drawing_msg = DrawingMsg {
-                    msg_type: String::from("line"),
-                    line: Some(line),
-                    messages: None,
-                };
+                let drawing_msg = DrawingMsg::new(Some(line), None, String::from("line"));
                 send_to_all(&uuid, &drawing_msg, &clients, false).await;
 
                 // send number of messages
-                let drawing_msg2 = DrawingMsg {
-                    msg_type: String::from("messages"),
-                    line: None,
-                    messages: Some(lines.lock().await.len()),
-                };
+                let drawing_msg2 = DrawingMsg::new(None,  Some(lines.lock().await.len()), String::from("messages"));
                 send_to_all(&uuid, &drawing_msg2, &clients, true).await;
             },
             Err(e) => {
@@ -73,7 +74,9 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
         }
     }
 
+    println!("{} discontected", uuid);
     clients.lock().await.remove(&uuid);
+    send_number_of_clients(&uuid, &clients, false).await;
 }
 
 async fn send_to_all(current_uuid: &str, drawing_msg: &DrawingMsg, clients: &Clients, self_included: bool) {
@@ -87,16 +90,19 @@ async fn send_to_all(current_uuid: &str, drawing_msg: &DrawingMsg, clients: &Cli
     }
 }
 
+async fn send_number_of_clients(client_uuid: &str, clients: &Clients, self_included: bool) {
+    let len = clients.lock().await.len();
+    let msg = DrawingMsg::new(None, Some(len), String::from("n_clients"));
+    println!("n_clients: {}", len);
+    send_to_all(client_uuid, &msg, clients, self_included).await;
+}
+
 async fn read_existing_lines_for_new_client(lines: LinkedList<Line>, new_client: &Client) {
     //Send what we have in lines to new client
     let mut iter = lines.iter();
 
     // send number of messages
-    let drawing_msg = DrawingMsg {
-        msg_type: String::from("messages"),
-        line: None,
-        messages: Some(lines.len()),
-    };
+    let drawing_msg = DrawingMsg::new(None, Some(lines.len()), String::from("messages"));
     let json = serde_json::to_string(&drawing_msg).unwrap();
     new_client.sender.as_ref().unwrap().send(Ok(Message::text(json))).unwrap();
 
@@ -106,12 +112,7 @@ async fn read_existing_lines_for_new_client(lines: LinkedList<Line>, new_client:
 
         match line {
             Some(line) => {
-                let drawing_msg = DrawingMsg {
-                    msg_type: String::from("line"),
-                    line: Some(line.clone()),
-                    messages: None,
-                };
-
+                let drawing_msg = DrawingMsg::new( Some(line.clone()), None, String::from("line"));
                 let json = serde_json::to_string(&drawing_msg).unwrap();
                 if let Some(sender) = &new_client.sender {
                     // See if can send successfully
