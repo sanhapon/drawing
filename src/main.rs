@@ -6,7 +6,7 @@ use std::{collections::HashMap, convert::Infallible, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
 use warp::{ws::Message, Filter, Rejection};
 use serde::{Serialize, Deserialize};
-mod handlers;
+mod ws_handlers;
 mod ws;
 
 pub const MAX_MESSAGES: usize = 2000;
@@ -59,7 +59,7 @@ async fn main() {
         .and(warp::ws())
         .and(with_clients(clients.clone()))
         .and(with_lines(lines.clone()))
-        .and_then(handlers::ws_handler);
+        .and_then(ws_handlers::ws_handler);
 
     let routes = ws_route
                     .with(warp::cors().allow_any_origin())
