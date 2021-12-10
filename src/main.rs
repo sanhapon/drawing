@@ -36,10 +36,10 @@ impl DrawingMsg {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Line {
-    pub last_x: u16,
-    pub last_y: u16,
-    pub new_x: u16,
-    pub new_y: u16,
+    pub last_x: f32,
+    pub last_y: f32,
+    pub new_x: f32,
+    pub new_y: f32,
 }
 
 type Clients = Arc<Mutex<HashMap<String, Client>>>;
