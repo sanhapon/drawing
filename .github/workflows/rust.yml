@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: 269980259975.dkr.ecr.us-east-2.amazonaws.com/drawing
+  ECR_REPOSITORY: drawing
 
 jobs:
   deploy:
