@@ -24,6 +24,16 @@ pub struct DrawingMsg  {
     msg_type: String ,
 }
 
+impl DrawingMsg {
+    fn new(line: Option<Line>, messages: Option<usize>, msg_type: String) -> DrawingMsg {
+        DrawingMsg {
+            line: line,
+            messages: messages,
+            msg_type:msg_type
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Line {
     pub last_x: u16,
