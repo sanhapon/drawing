@@ -2,7 +2,7 @@ FROM rust:1.57 as builder
 
 WORKDIR /usr/src/drawing
 
-COPY . .
+COPY ./server/ .
 
 # # RUN cargo install --path .
 RUN cargo build --release

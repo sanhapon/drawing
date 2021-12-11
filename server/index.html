@@ -5,37 +5,41 @@
       <title>Live Drawing</title>
     </head>
     <body>
-      <div>Messages: <span id='messages'>0</span></div>
-      <canvas id="myCanvas" width="1800" height="980" style="background: #000; margin-top:10px;"></canvas>
-
+      <div>Messages: <span id='messages'>0</span> &nbsp;, Online: <span id='clients'>1</span></div>
+      <canvas id="myCanvas" width="1800" height="980" style="background: #000; margin-top:10px;">
+        Your browser does not support the canvas tag.
+      </canvas>
+      <div>Source code &nbsp;<a href="https://github.com/sanhapon/drawing">https://github.com/sanhapon/drawing</a></div>
+      <div id="anotherDiv"></div>
+      <script type="module" src="./index.js"></script>
       <script>
+         const canvas = document.getElementById("myCanvas");
+         const ctx = canvas.getContext("2d");
          var ws = new WebSocket(`ws://${window.location.hostname}/ws`);
 
           ws.onmessage = function (evt) {
             const msg = JSON.parse(evt.data);
-            const mySpan = document.getElementById("messages");
             if (msg.msg_type === 'messages') {
+              const mySpan = document.getElementById("messages");
               mySpan.textContent = msg.messages;
               if (msg.messages === 0) {
-                console.log("clear");
-                const c = document.getElementById("myCanvas");
-                const cv = c.getContext('2d');
-                cv.clearRect(0,0,1800,980);
+                ctx.clearRect(0,0,1800,980);
               }
-            } else {
+            } else if (msg.msg_type === "line") {
               draw(msg.line);
+            } else {
+              const mySpan = document.getElementById("clients");
+              mySpan.textContent = msg.messages;
             }
           };
 
-          const c = document.getElementById("myCanvas");
-          c.addEventListener("click", penTool);
-          c.addEventListener("mousedown", setLastCoords);
-          c.addEventListener("mousemove", freeForm);
+          canvas.addEventListener("click", penTool);
+          canvas.addEventListener("mousedown", setLastCoords);
+          canvas.addEventListener("mousemove", freeForm);
 
-          const ctx = c.getContext("2d");
 
           function setLastCoords(e) {
-              const {x, y} = c.getBoundingClientRect();
+              const {x, y} = canvas.getBoundingClientRect();
               last_x = e.clientX - x;
               last_y = e.clientY - y;
           }
@@ -46,7 +50,7 @@
           }
 
           function penTool(e) {
-              const {x, y} = c.getBoundingClientRect();
+              const {x, y} = canvas.getBoundingClientRect();
               const new_x = e.clientX - x;
               const new_y = e.clientY - y;
 
