@@ -1,7 +1,7 @@
-import init from "./pkg/wasm_drawing.js";
+import init from "./pkg/drawing_wasm.js";
 
 const runWasm = async () => {
-    const wasm = await init("./pkg/wasm_drawing_bg.wasm");
+    const wasm = await init("./pkg/drawing_wasm_bg.wasm");
 
     const result = wasm.add(1,2);
 

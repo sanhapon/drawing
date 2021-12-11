@@ -34,7 +34,7 @@ impl DrawingMsg {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Line {
     pub last_x: f32,
     pub last_y: f32,
@@ -57,11 +57,11 @@ async fn main() {
     let js_route = warp::path("index.js")
                     .and(warp::fs::file("./index.js"));
 
-    let js_wasm_drawing =  warp::path!("pkg" / "wasm_drawing.js")
-                    .and(warp::fs::file("./pkg/wasm_drawing.js"));
+    let js_wasm_drawing =  warp::path!("pkg" / "drawing_wasm.js")
+                    .and(warp::fs::file("pkg/drawing_wasm.js"));
 
-    let js_wasm_drawing_bg =  warp::path!("pkg" / "wasm_drawing_bg.wasm")
-                    .and(warp::fs::file("./pkg/wasm_drawing_bg.wasm"));
+    let js_wasm_drawing_bg =  warp::path!("pkg" / "drawing_wasm_bg.wasm")
+                    .and(warp::fs::file("pkg/drawing_wasm_bg.wasm"));
 
     let ws_route = warp::path("ws")
                     .and(warp::ws())
