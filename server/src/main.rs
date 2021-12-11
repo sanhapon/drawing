@@ -34,7 +34,7 @@ impl DrawingMsg {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Line {
     pub last_x: f32,
     pub last_y: f32,
@@ -51,19 +51,31 @@ async fn main() {
     let clients: Clients = Arc::new(Mutex::new(HashMap::new()));
     let lines: Lines = Arc::new(Mutex::new(LinkedList::new()));
 
-    let index_route =warp::get()
-        .and(warp::path::end())
-        .and(warp::fs::file("./index.html"));
+    let index_route = warp::path::end()
+                    .and(warp::fs::file("./index.html"));
+
+    let js_route = warp::path("index.js")
+                    .and(warp::fs::file("./index.js"));
+
+    let js_wasm_drawing =  warp::path!("pkg" / "drawing_wasm.js")
+                    .and(warp::fs::file("pkg/drawing_wasm.js"));
+
+    let js_wasm_drawing_bg =  warp::path!("pkg" / "drawing_wasm_bg.wasm")
+                    .and(warp::fs::file("pkg/drawing_wasm_bg.wasm"));
 
     let ws_route = warp::path("ws")
-        .and(warp::ws())
-        .and(with_clients(clients.clone()))
-        .and(with_lines(lines.clone()))
-        .and_then(ws_handlers::ws_handler);
+                    .and(warp::ws())
+                    .and(with_clients(clients.clone()))
+                    .and(with_lines(lines.clone()))
+                    .and_then(ws_handlers::ws_handler);
 
-    let routes = ws_route
-                    .with(warp::cors().allow_any_origin())
-                    .or(index_route);
+    let routes = warp::get().and(
+        index_route
+        .or(js_route)
+        .or(ws_route)
+        .or(js_wasm_drawing)
+        .or(js_wasm_drawing_bg)
+    ).with(warp::cors().allow_any_origin());
 
     println!("Starting server");
     warp::serve(routes).run(([0, 0, 0, 0], 80)).await;

@@ -2,8 +2,7 @@ name: 'deploymentment'
 
 on:
   push:
-    # tags:
-      # - v*
+    branches: [ main ]
 
 env:
   AWS_REGION: us-east-2
