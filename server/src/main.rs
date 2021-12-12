@@ -1,6 +1,3 @@
-// https://tms-dev-blog.com/build-basic-rust-websocket-server/
-// https://tms-dev-blog.com/warp-data-update-loop-easy-how-to/
-
 use std::collections::LinkedList;
 use std::{collections::HashMap, convert::Infallible, sync::Arc};
 use tokio::sync::{mpsc, Mutex};
