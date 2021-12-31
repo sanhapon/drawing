@@ -34,4 +34,5 @@ features = [
   'Window',
   'console',
   'WebSocket',
+  "MessageEvent",
 ]
