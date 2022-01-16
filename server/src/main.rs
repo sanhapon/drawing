@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 mod ws_handlers;
 mod ws;
 
-pub const MAX_MESSAGES: usize = 100000;
+pub const MAX_MESSAGES: usize = 20000;
 
 #[derive(Debug, Clone)]
 pub struct Client {
