@@ -14,7 +14,7 @@ RUN cargo build --release
 
 # Build wasm lib
 WORKDIR /usr/src/drawing/drawing_wasm
-RUN wasm-pack build --target web --out-dir ../server/pkg
+RUN wasm-pack build --release --target web --out-dir ../server/pkg
 
 FROM debian:buster-slim
 
