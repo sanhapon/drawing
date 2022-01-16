@@ -12,7 +12,7 @@ You may see the demo from this url [http://p3go.com]
 
 ## Build and run local server
 
-We will draw the canvas using web assembly in the future, so we start with simple lib.rs in different project and use it in the html. Thus we need to build wasm first then server later. We might need to install [wasm-pack] if it is neccessary. Note, we keep wasm output in the server project.
+We draw the canvas using web assembly,vlib.rs, in client-side (draing_wasm) project and use it in the html. Thus we need to build wasm first then server later. We might need to install [wasm-pack] if it is neccessary. Note, we keep wasm output in the server project.
 
 Use the following command to install wasm-pack
 ```
