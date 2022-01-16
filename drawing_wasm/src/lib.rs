@@ -16,11 +16,14 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn start(ws_location: &str) -> Result<(), JsValue> {
+pub fn start() -> Result<(), JsValue> {
     log("start");
-    log(ws_location);
 
-    let ws = WebSocket::new("ws://localhost/ws")?;
+    let location = web_sys::window().unwrap().location();
+    let hostname = format!("ws://{}/ws", location.hostname().unwrap());
+    log(&hostname[..]);
+
+    let ws = WebSocket::new(&hostname[..])?;
 
     let document = web_sys::window().unwrap().document().unwrap();
     let canvas = document
