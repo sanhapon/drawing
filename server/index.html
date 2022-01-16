@@ -3,10 +3,23 @@
     <head>
       <meta charset="utf-8">
       <title>Live Drawing</title>
+      <style>
+        .title {
+          font-size: 26px;
+          margin: 20px 20px 20px 20px;
+        }
+        #id {
+         background: #ff0;
+        }
+      </style>
     </head>
     <body>
-      <div>Messages: <span id='messages'>0</span> &nbsp;, Online: <span id='clients'>1</span></div>
-      <canvas id="canvas" width="1800" height="980" style="background: #fff; margin-top:10px;">
+      <div class="title">
+        Open 2 or more browsers and draw something.
+      </div>
+      <hr>
+      <!-- <div>Messages: <span id='messages'>0</span> &nbsp;, Online: <span id='clients'>1</span></div> -->
+      <canvas id="canvas" width="1800" height="980">
         Your browser does not support the canvas tag.
       </canvas>
       <div>Source code &nbsp;<a href="https://github.com/sanhapon/drawing">https://github.com/sanhapon/drawing</a></div>

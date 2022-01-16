@@ -2,13 +2,13 @@
 
 This simple webpage is hosted by warp, the webserver framework for warp speed. When clicking or moving the mouse, we will send XY coordinates to the webserver using websockets. The Webserver was developed by rust language; it maintained collections of client's connection which will boardcast incoming coordinates to all clients. We also keep coordinates in LinkedList so that when new clients connect to the server, it will get all previous drawings.
 
-We cleaned the canvas when LinkedList (of coordinates) contain more than 2,000 messages.
+We cleaned the canvas when LinkedList (of coordinates) contain more than 10,000 messages.
 
+The client is developed using WASM (Web Assembly) by Rust language. The web_sys lib crate is a bridge between Html Canvas and Rust, we handle mouse down, mouse up and mouse move canvas 's event to send TCP message to the server. We also listen for the messge from other browsers to draw lines.
 
 ## Demo
 
 You may see the demo from this url [http://p3go.com]
-
 
 ## Build and run local server
 
@@ -22,7 +22,7 @@ cargo install wasm-pack
 Now build wasm library and run server
 ```
 $cd drawing_wasm
-$wasm-pack build --target web --out-dir ../server/pkg
+$wasm-pack build --release --target web --out-dir ../server/pkg
 $cd ../server
 $cargo run
 ```
