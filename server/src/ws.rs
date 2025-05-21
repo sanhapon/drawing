@@ -43,29 +43,87 @@ pub async fn client_connection(ws: WebSocket, clients: Clients, lines: Lines) {
                     break;
                 }
 
-                // let line : Line = match msg.to_str() {
-                let line : Line = match msg.to_str() {
-                    Ok(v) => serde_json::from_str(v).unwrap(),
-                    Err(e) => {
-                        println!("got msg but cannot parase => {:?}", e);
-                        break;
+                if msg.is_text() {
+                    let msg_str = msg.to_str().unwrap_or_default();
+                    if msg_str.is_empty() {
+                        println!("Received empty message from {}", uuid);
+                        continue;
                     }
-                };
 
-                lines.lock().await.push_back(line.clone());
+                    // Attempt to parse as generic JSON to check msg_type
+                    match serde_json::from_str::<serde_json::Value>(msg_str) {
+                        Ok(json_value) => {
+                            if let Some(msg_type) = json_value.get("msg_type").and_then(|v| v.as_str()) {
+                                if msg_type == "clear" {
+                                    println!("Received clear message from {}", uuid);
+                                    lines.lock().await.clear(); // Clear the history
 
-                // if line > 2000 then reset
-                if lines.lock().await.len() > MAX_MESSAGES {
-                    lines.lock().await.clear();
+                                    // Broadcast clear message to all clients
+                                    let clear_broadcast_msg = DrawingMsg::new(None, Some(0), String::from("clear"));
+                                    send_to_all(&uuid, &clear_broadcast_msg, &clients, true).await;
+                                    
+                                    // Also send the updated (zero) message count
+                                    let messages_count_msg = DrawingMsg::new(None, Some(0), String::from("messages"));
+                                    send_to_all(&uuid, &messages_count_msg, &clients, true).await;
+                                    continue; // Skip further processing for this message
+                                }
+                            }
+                            
+                            // If not a "clear" message, assume it's a "line" message
+                            // (This is the original logic for handling line messages)
+                            match serde_json::from_str::<Line>(msg_str) {
+                                Ok(line) => {
+                                    lines.lock().await.push_back(line.clone());
+
+                                    if lines.lock().await.len() > MAX_MESSAGES {
+                                        lines.lock().await.clear();
+                                        // Inform clients that canvas was cleared due to message limit
+                                        let auto_clear_msg = DrawingMsg::new(None, Some(0), String::from("clear"));
+                                        send_to_all(&uuid, &auto_clear_msg, &clients, true).await;
+                                    }
+
+                                    let drawing_msg = DrawingMsg::new(Some(line), None, String::from("line"));
+                                    send_to_all(&uuid, &drawing_msg, &clients, false).await;
+
+                                    let current_line_count = lines.lock().await.len();
+                                    let drawing_msg2 = DrawingMsg::new(None,  Some(current_line_count), String::from("messages"));
+                                    send_to_all(&uuid, &drawing_msg2, &clients, true).await;
+                                }
+                                Err(e) => {
+                                    println!("Failed to parse Line from message: {:?}, error: {}", msg_str, e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            // This case handles if the message is not even valid JSON.
+                            // It could be the original Line message format which doesn't have "msg_type"
+                            // Try to parse as Line directly for backward compatibility or simple line messages
+                            match serde_json::from_str::<Line>(msg_str) {
+                                Ok(line) => {
+                                    lines.lock().await.push_back(line.clone());
+
+                                    if lines.lock().await.len() > MAX_MESSAGES {
+                                        lines.lock().await.clear();
+                                        let auto_clear_msg = DrawingMsg::new(None, Some(0), String::from("clear"));
+                                        send_to_all(&uuid, &auto_clear_msg, &clients, true).await;
+                                    }
+
+                                    let drawing_msg = DrawingMsg::new(Some(line), None, String::from("line"));
+                                    send_to_all(&uuid, &drawing_msg, &clients, false).await;
+                                    
+                                    let current_line_count = lines.lock().await.len();
+                                    let drawing_msg2 = DrawingMsg::new(None,  Some(current_line_count), String::from("messages"));
+                                    send_to_all(&uuid, &drawing_msg2, &clients, true).await;
+                                }
+                                Err(e_line) => {
+                                     println!("Failed to parse message as JSON Value or Line: {:?}, json_err: {}, line_err: {}", msg_str, e, e_line);
+                                }
+                            }
+                        }
+                    }
+                } else if msg.is_binary() {
+                    println!("Received binary message from {}: not handled", uuid);
                 }
-
-                // send line
-                let drawing_msg = DrawingMsg::new(Some(line), None, String::from("line"));
-                send_to_all(&uuid, &drawing_msg, &clients, false).await;
-
-                // send number of messages
-                let drawing_msg2 = DrawingMsg::new(None,  Some(lines.lock().await.len()), String::from("messages"));
-                send_to_all(&uuid, &drawing_msg2, &clients, true).await;
             },
             Err(e) => {
                 println!("error receiving message for id {}): {}", &uuid.clone(), e);
